@@ -20,14 +20,12 @@ type replicaSetMembers struct {
 }
 
 func (s *Service) mongoDBReadReplicaToTarget() (string, error) {
-	db := s.conf.MongoDBClient.Database("admin")
-
 	rsMembers := replicaSetMembers{
 		Members: make([]member, 3),
 	}
 
 	// https://www.mongodb.com/docs/drivers/go/current/fundamentals/run-command/
-	err := db.RunCommand(context.Background(), bson.D{bson.E{Key: "replSetGetStatus", Value: 1}}).Decode(&rsMembers)
+	err := s.conf.MongoDBClient.RunCommand(context.Background(), bson.D{bson.E{Key: "replSetGetStatus", Value: 1}}).Decode(&rsMembers)
 	if err != nil {
 		return "", fmt.Errorf("getting replica set status: %v", err)
 	}

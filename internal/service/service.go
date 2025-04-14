@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-
 	"github.com/michaelprice232/mongodb-backup-launcher/config"
 )
 
@@ -25,7 +24,7 @@ func (s *Service) Run() error {
 		return fmt.Errorf("finding which availabilty zone to target: %w", err)
 	}
 
-	err = s.createJob(targetHost, targetAZ, targetNamespace)
+	_, err = s.createJob(targetHost, targetAZ, targetNamespace)
 	if err != nil {
 		return fmt.Errorf("creating job: %w", err)
 	}
