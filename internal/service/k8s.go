@@ -58,7 +58,7 @@ func (s *Service) availabilityZoneToTarget(replicaHostPath string) (string, stri
 	return az, namespace, nil
 }
 
-func (s *Service) createJob(mongoDBHost, az, namespace string) error {
+func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, error) {
 	job, err := s.conf.K8sClient.BatchV1().Jobs(namespace).Create(context.Background(), &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "targeted-backups-",
@@ -176,10 +176,10 @@ func (s *Service) createJob(mongoDBHost, az, namespace string) error {
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("creating K8s jobs client: %w", err)
+		return nil, fmt.Errorf("creating K8s jobs client: %w", err)
 	}
 
 	slog.Debug("Job created", "Job", job.Name)
 
-	return nil
+	return job, nil
 }

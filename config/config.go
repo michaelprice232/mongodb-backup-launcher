@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,12 +16,29 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+type SingleResult interface {
+	Decode(v any) error
+}
+
+type MongoDBClient interface {
+	RunCommand(ctx context.Context, runCommand interface{}) SingleResult
+}
+
 type Config struct {
-	MongoDBClient  *mongo.Client
-	K8sClient      *kubernetes.Clientset
+	MongoDBClient  MongoDBClient
+	K8sClient      kubernetes.Interface
 	ExcludeReplica string
 	LogLevel       string
 	DockerImageURI string
+}
+
+// realMongoClient wraps the MongoDB Database struct to work around the fact that mongo.SingleResult has no exported fields we can mock.
+type realMongoClient struct {
+	db *mongo.Database
+}
+
+func (r *realMongoClient) RunCommand(ctx context.Context, runCommand interface{}) SingleResult {
+	return r.db.RunCommand(ctx, runCommand)
 }
 
 func NewConfig() (Config, error) {
@@ -65,7 +83,9 @@ func NewConfig() (Config, error) {
 	if err != nil {
 		return conf, fmt.Errorf("creating MongoDB client: %w", err)
 	}
-	conf.MongoDBClient = mongoDBc
+	conf.MongoDBClient = &realMongoClient{
+		db: mongoDBc,
+	}
 
 	// K8s Client
 	k8sc, err := k8sClient()
@@ -103,7 +123,7 @@ func k8sClient() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func mongoDBClient() (*mongo.Client, error) {
+func mongoDBClient() (*mongo.Database, error) {
 	mongoUsername := os.Getenv("MONGODB_USERNAME")
 	if mongoUsername == "" {
 		return nil, fmt.Errorf("mongoDB username - MONGODB_USERNAME - has not been set")
@@ -132,5 +152,5 @@ func mongoDBClient() (*mongo.Client, error) {
 		return nil, fmt.Errorf("creating MongoDB client: %w", err)
 	}
 
-	return client, nil
+	return client.Database("admin"), nil
 }
