@@ -29,8 +29,8 @@ func Test_createJob(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, job)
 	assert.Equal(t, job.Namespace, namespace)
-	assert.Contains(t, job.Annotations, "karpenter.sh/do-not-disrupt")
-	
+	assert.Contains(t, job.Spec.Template.Annotations, "karpenter.sh/do-not-disrupt")
+
 	expressions := job.Spec.Template.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions
 	var foundAZAffinity bool
 	var foundNodePoolAffinity bool

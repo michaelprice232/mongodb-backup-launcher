@@ -61,16 +61,30 @@ func (s *Service) availabilityZoneToTarget(replicaHostPath string) (string, stri
 func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, error) {
 	job, err := s.conf.K8sClient.BatchV1().Jobs(namespace).Create(context.Background(), &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "targeted-backups-",
+			GenerateName: "targeted-mongodb-backups-",
 			Namespace:    namespace,
 			Annotations: map[string]string{
-				"karpenter.sh/do-not-disrupt": "true",
+				"created-by": s.conf.Hostname,
+			},
+			Labels: map[string]string{
+				"backup-type": s.conf.BackupType,
+				"app":         "mongodb-backups",
 			},
 		},
 		Spec: batchv1.JobSpec{
 			TTLSecondsAfterFinished: pointer.Int32(900),
 			BackoffLimit:            pointer.Int32(3),
 			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"karpenter.sh/do-not-disrupt": "true",
+					},
+					Labels: map[string]string{
+						"backup-type": s.conf.BackupType,
+						"app":         "mongodb-backups",
+					},
+				},
+
 				Spec: corev1.PodSpec{
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "backups",
@@ -111,7 +125,7 @@ func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, er
 						{
 							Name:    "app",
 							Image:   s.conf.DockerImageURI,
-							Command: []string{"/usr/local/bin/mongodump_k8s.sh", "hourly"},
+							Command: []string{"/usr/local/bin/mongodump_k8s.sh", s.conf.BackupType},
 
 							EnvFrom: []corev1.EnvFromSource{
 								{ConfigMapRef: &corev1.ConfigMapEnvSource{
