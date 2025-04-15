@@ -30,6 +30,8 @@ type Config struct {
 	ExcludeReplica string
 	LogLevel       string
 	DockerImageURI string
+	BackupType     string
+	Hostname       string
 }
 
 // realMongoClient wraps the MongoDB Database struct to work around the fact that mongo.SingleResult has no exported fields we can mock.
@@ -77,6 +79,21 @@ func NewConfig() (Config, error) {
 		return conf, fmt.Errorf("docker image URI - DOCKER_IMAGE_URI - has not been set")
 	}
 	conf.DockerImageURI = dockerImageURI
+
+	// What type of backup to trigger
+	backupType := os.Getenv("BACKUP_TYPE")
+	if backupType != "hourly" && backupType != "daily" {
+		return conf, fmt.Errorf("BACKUP_TYPE must be 'hourly' or 'daily'")
+	}
+	conf.BackupType = backupType
+
+	// Get the hostname so we annotate the created jobs with the owner
+	hostname := os.Getenv("HOSTNAME")
+	if hostname != "" {
+		conf.Hostname = hostname
+	} else {
+		conf.Hostname = "unknown"
+	}
 
 	// MongoDB Client
 	mongoDBc, err := mongoDBClient()

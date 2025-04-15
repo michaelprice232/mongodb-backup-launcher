@@ -40,19 +40,19 @@ func Test_mongoDBReadReplicaToTarget(t *testing.T) {
 	}{
 		{
 			name: "GoodWithExcludeReplica", ok: 1, members: []member{
-				{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
-				{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
-				{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
+			{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
+			{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
+			{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
 			excludeReplica: "mongodb-1.mongodb.database.svc.cluster.local",
 			expectedTarget: "mongodb-2.mongodb.database.svc.cluster.local",
 			expectedError:  false,
 		},
 		{
 			name: "GoodWithNoExcludeReplica", ok: 1, members: []member{
-				{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
-				{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
-				{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
-			expectedTarget: "mongodb-1.mongodb.database.svc.cluster.local",
+			{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
+			{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
+			{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
+			expectedTarget: "mongodb-0.mongodb.database.svc.cluster.local",
 			expectedError:  false,
 		},
 		{
@@ -67,18 +67,18 @@ func Test_mongoDBReadReplicaToTarget(t *testing.T) {
 		},
 		{
 			name: "DebugLogging", ok: 1, members: []member{
-				{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
-				{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
-				{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
-			expectedTarget: "mongodb-1.mongodb.database.svc.cluster.local",
+			{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
+			{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
+			{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "PRIMARY"}},
+			expectedTarget: "mongodb-0.mongodb.database.svc.cluster.local",
 			expectedError:  false,
 			logLevel:       "debug",
 		},
 		{
 			name: "FailedDecode", ok: 1, members: []member{
-				{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
-				{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
-				{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
+			{Name: "mongodb-0.mongodb.database.svc.cluster.local", Role: "PRIMARY"},
+			{Name: "mongodb-1.mongodb.database.svc.cluster.local", Role: "SECONDARY"},
+			{Name: "mongodb-2.mongodb.database.svc.cluster.local", Role: "SECONDARY"}},
 			expectedTarget: "",
 			expectedError:  true,
 		},

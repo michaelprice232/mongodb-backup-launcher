@@ -21,6 +21,7 @@ export MONGODB_USERNAME=<username>                                          # Us
 export MONGODB_PASSWORD=<password>                                          # Password for connecting to the DB
 export DOCKER_IMAGE_URI=<repo>:<tag>                                        # Docker image that is run in the provisioned K8s job. Should perform the actual backup e.g. mongodump
 export RUNNING_LOCALLY=true                                                 # Use a local kubeconfig rather than in-cluster config for the K8s client
+export BACKUP_TYPE=hourly                                                   # The backup type to pass to the provisioned backup script. Must be 'hourly' or 'daily'
 
 # Port forward to any of the MongoDB pods in the replica set
 kubectl -n database port-forward sts/mongodb 27017:27017 &
