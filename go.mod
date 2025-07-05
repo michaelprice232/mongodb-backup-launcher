@@ -1,16 +1,16 @@
 module github.com/michaelprice232/mongodb-backup-launcher
 
-go 1.23.0
+go 1.24.0
 
-toolchain go1.23.6
+toolchain go1.24.2
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.mongodb.org/mongo-driver/v2 v2.2.0
-	k8s.io/api v0.32.3
-	k8s.io/apimachinery v0.32.3
-	k8s.io/client-go v0.32.3
-	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
+	go.mongodb.org/mongo-driver/v2 v2.2.2
+	k8s.io/api v0.33.2
+	k8s.io/apimachinery v0.33.2
+	k8s.io/client-go v0.33.2
+	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 )
 
 require (

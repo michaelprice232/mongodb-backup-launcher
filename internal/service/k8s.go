@@ -16,6 +16,7 @@ import (
 
 const azWellKnownLabel = "topology.kubernetes.io/zone"
 
+// availabilityZoneToTarget finds the AZ and namespace for a given replica host.
 func (s *Service) availabilityZoneToTarget(replicaHostPath string) (string, string, error) {
 	parts := strings.Split(replicaHostPath, ".")
 	if len(parts) < 3 {
@@ -58,6 +59,7 @@ func (s *Service) availabilityZoneToTarget(replicaHostPath string) (string, stri
 	return az, namespace, nil
 }
 
+// createJob creates a Kubernetes Job for the backup.
 func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, error) {
 	job, err := s.conf.K8sClient.BatchV1().Jobs(namespace).Create(context.Background(), &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -72,8 +74,10 @@ func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, er
 			},
 		},
 		Spec: batchv1.JobSpec{
-			TTLSecondsAfterFinished: pointer.Int32(900),
-			BackoffLimit:            pointer.Int32(3),
+			TTLSecondsAfterFinished: pointer.Int32(900),                  // cleanup finished jobs after 15 minutes
+			BackoffLimit:            pointer.Int32(3),                    // retry upto 3 times
+			ActiveDeadlineSeconds:   pointer.Int64(s.conf.BackupTimeout), // timeout job after this overall period
+
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -105,7 +109,7 @@ func (s *Service) createJob(mongoDBHost, az, namespace string) (*batchv1.Job, er
 									{
 										MatchExpressions: []corev1.NodeSelectorRequirement{
 											{
-												Key:      "topology.kubernetes.io/zone",
+												Key:      azWellKnownLabel,
 												Operator: corev1.NodeSelectorOpIn,
 												Values:   []string{az},
 											},
