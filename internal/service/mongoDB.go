@@ -19,6 +19,7 @@ type replicaSetMembers struct {
 	Members []member `bson:"members"`
 }
 
+// mongoDBReadReplicaToTarget finds a suitable secondary MongoDB replica to target for backup.
 func (s *Service) mongoDBReadReplicaToTarget() (string, error) {
 	rsMembers := replicaSetMembers{
 		Members: make([]member, 3),
@@ -45,6 +46,11 @@ func (s *Service) mongoDBReadReplicaToTarget() (string, error) {
 	var target string
 	for _, m := range rsMembers.Members {
 		if m.Role == "SECONDARY" {
+			if m.Name == "" {
+				slog.Warn("Found SECONDARY replica set member with empty name, skipping", "member", m)
+				continue
+			}
+
 			if s.conf.ExcludeReplica != "" && s.conf.ExcludeReplica == m.Name {
 				continue
 			}

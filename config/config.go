@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -32,6 +33,7 @@ type Config struct {
 	DockerImageURI string
 	BackupType     string
 	Hostname       string
+	BackupTimeout  int64
 }
 
 // realMongoClient wraps the MongoDB Database struct to work around the fact that mongo.SingleResult has no exported fields we can mock.
@@ -39,10 +41,12 @@ type realMongoClient struct {
 	db *mongo.Database
 }
 
+// RunCommand runs a MongoDB command and returns a SingleResult.
 func (r *realMongoClient) RunCommand(ctx context.Context, runCommand interface{}) SingleResult {
 	return r.db.RunCommand(ctx, runCommand)
 }
 
+// NewConfig creates a new Config struct from environment variables and clients.
 func NewConfig() (Config, error) {
 	conf := Config{}
 
@@ -87,6 +91,19 @@ func NewConfig() (Config, error) {
 	}
 	conf.BackupType = backupType
 
+	// Job timeout
+	jobTimeOut := os.Getenv("BACKUP_JOB_TIMEOUT_SEC")
+	if jobTimeOut != "" {
+		jto, err := strconv.ParseInt(jobTimeOut, 10, 64)
+		if err != nil {
+			return conf, fmt.Errorf("parsing BACKUP_JOB_TIMEOUT_SEC as int64: %w", err)
+		}
+		conf.BackupTimeout = jto
+	} else {
+		// Default to 45 minutes if unset
+		conf.BackupTimeout = 2700
+	}
+
 	// Get the hostname so we annotate the created jobs with the owner
 	hostname := os.Getenv("HOSTNAME")
 	if hostname != "" {
@@ -114,7 +131,8 @@ func NewConfig() (Config, error) {
 	return conf, nil
 }
 
-func k8sClient() (*kubernetes.Clientset, error) {
+// k8sClient creates a new Kubernetes clientset.
+var k8sClient = func() (*kubernetes.Clientset, error) {
 	var client *kubernetes.Clientset
 	var config *rest.Config
 	var err error
@@ -140,7 +158,8 @@ func k8sClient() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func mongoDBClient() (*mongo.Database, error) {
+// mongoDBClient creates a new MongoDB database client.
+var mongoDBClient = func() (*mongo.Database, error) {
 	mongoUsername := os.Getenv("MONGODB_USERNAME")
 	if mongoUsername == "" {
 		return nil, fmt.Errorf("mongoDB username - MONGODB_USERNAME - has not been set")

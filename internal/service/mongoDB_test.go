@@ -37,6 +37,7 @@ func Test_mongoDBReadReplicaToTarget(t *testing.T) {
 		expectedTarget string
 		expectedError  bool
 		logLevel       string
+		nilMembers     bool // for simulating nil slice
 	}{
 		{
 			name: "GoodWithExcludeReplica", ok: 1, members: []member{
@@ -82,6 +83,63 @@ func Test_mongoDBReadReplicaToTarget(t *testing.T) {
 			expectedTarget: "",
 			expectedError:  true,
 		},
+		{
+			name: "MultipleExcludedReplicas", ok: 1, members: []member{
+			{Name: "mongodb-1", Role: "SECONDARY"},
+			{Name: "mongodb-2", Role: "SECONDARY"},
+			{Name: "mongodb-3", Role: "SECONDARY"},
+		},
+			excludeReplica: "mongodb-1",
+			expectedTarget: "mongodb-2",
+			expectedError:  false,
+		},
+		{
+			name: "AllSecondariesExcluded", ok: 1, members: []member{
+			{Name: "mongodb-1", Role: "SECONDARY"},
+			{Name: "mongodb-2", Role: "SECONDARY"},
+		},
+			excludeReplica: "mongodb-1", // will exclude first, but not second
+			expectedTarget: "mongodb-2",
+			expectedError:  false,
+		},
+		{
+			name: "MultipleExcludedReplicasPassed", ok: 1, members: []member{
+			{Name: "mongodb-1", Role: "SECONDARY"},
+			{Name: "mongodb-2", Role: "SECONDARY"},
+		},
+			excludeReplica: "mongodb-1,mongodb-2", // multiple excluded replicas are not supported by code, so there will not be a match
+			expectedTarget: "mongodb-1",
+			expectedError:  false,
+		},
+		{
+			name: "NoSecondaries", ok: 1, members: []member{
+			{Name: "mongodb-1", Role: "PRIMARY"},
+			{Name: "mongodb-2", Role: "ARBITER"},
+		},
+			expectedTarget: "",
+			expectedError:  true,
+		},
+		{
+			name: "MalformedMemberEmptyName", ok: 1, members: []member{
+			{Name: "", Role: "SECONDARY"},
+			{Name: "mongodb-2", Role: "SECONDARY"},
+		},
+			expectedTarget: "mongodb-2",
+			expectedError:  false,
+		},
+		{
+			name: "MalformedMemberEmptyRole", ok: 1, members: []member{
+			{Name: "mongodb-1", Role: ""},
+			{Name: "mongodb-2", Role: "SECONDARY"},
+		},
+			expectedTarget: "mongodb-2",
+			expectedError:  false,
+		},
+		{
+			name: "NilMembersSlice", ok: 1, nilMembers: true,
+			expectedTarget: "",
+			expectedError:  true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -98,7 +156,11 @@ func Test_mongoDBReadReplicaToTarget(t *testing.T) {
 			mockResult.On("Decode", mock.Anything).Run(func(args mock.Arguments) {
 				ptr := args.Get(0).(*replicaSetMembers)
 				ptr.OK = tc.ok
-				ptr.Members = tc.members
+				if tc.nilMembers {
+					ptr.Members = nil
+				} else {
+					ptr.Members = tc.members
+				}
 			}).Return(decodeError)
 
 			mockClient.On("RunCommand", mock.Anything, mock.Anything).Return(mockResult)
